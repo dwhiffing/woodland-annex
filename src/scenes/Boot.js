@@ -19,7 +19,10 @@ export default class extends Phaser.Scene {
         60,
       )
     })
-
+    this.load.spritesheet('cash', 'assets/images/cash.png', {
+      frameWidth: 256,
+      frameHeight: 256,
+    })
     this.load.script(
       'webfont',
       'https://ajax.googleapis.com/ajax/libs/webfont/1.6.26/webfont.js',
@@ -32,8 +35,8 @@ export default class extends Phaser.Scene {
         },
         active: () => {
           progress.destroy()
-          this.scene.start('Menu')
-          // this.scene.start('Game')
+          // this.scene.start('Menu')
+          this.scene.start('Game')
         },
       })
     })

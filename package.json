@@ -28,7 +28,6 @@
     "webpack-merge": "^4.2.2"
   },
   "dependencies": {
-    "behavior-system": "^3.0.5",
     "lodash": "^4.17.15",
     "phaser": "^3.22.0"
   }
