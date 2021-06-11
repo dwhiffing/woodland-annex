@@ -8,16 +8,16 @@ export class Slot extends Phaser.GameObjects.Zone {
 
     this.scene = scene
     this.setDropZone()
-    this.setOrigin(0)
+    this.setOrigin(0.5)
     // this.setCollideWorldBounds(true, 0.2, 0.2)
     this.sprite = new Phaser.GameObjects.Sprite(
       scene,
       x * TILE_SIZE,
       y * TILE_SIZE,
-      'cash',
+      'tiles',
     )
 
-    this.sprite.setOrigin(0)
+    this.sprite.setOrigin(0.5)
     this.sprite.setTintFill(0x00ff00)
     scene.add.existing(this.sprite)
     this.sprite.setDepth(0)

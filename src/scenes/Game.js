@@ -1,4 +1,3 @@
-import { TILE_SIZE } from '../constants'
 import { Tile } from '../objects/Tile'
 
 export default class extends Phaser.Scene {
@@ -13,7 +12,7 @@ export default class extends Phaser.Scene {
 
   create() {
     this.cameras.main.setZoom(1)
-    this.cameras.main.centerOn(TILE_SIZE / 2, TILE_SIZE / 2)
+    this.cameras.main.centerOn(0, 0)
 
     // Create initial tile
     this.board = {}
@@ -21,8 +20,17 @@ export default class extends Phaser.Scene {
     this.add.existing(tile)
     tile.disable()
 
-    // Create hand of tiles
     this.drawCards()
+
+    this.input.keyboard.on('keydown-SPACE', () => {
+      this.draggingTile.angle += 90
+    })
+
+    // TODO: making zoom work will take a bunch of random adjustments
+    // this.input.on('wheel', (pointer, gameObjects, deltaX, deltaY, deltaZ) => {
+    //   this.cameras.main.zoom -= deltaY * 0.001
+    //   this.cameras.main.zoom = Phaser.Math.Clamp(this.cameras.main.zoom, 0.5, 2)
+    // })
 
     this.input.on('pointermove', this.pointerMove)
     this.input.on('pointerdown', this.pointerDown)
@@ -35,14 +43,20 @@ export default class extends Phaser.Scene {
 
   drawCards = () => {
     this.cards = []
-    for (let i = 0; i < 6; i++) this.cards.push(new Tile(this, i + 1, 6.5))
+    for (let i = 0; i < 6; i++) {
+      const frame = Phaser.Math.RND.between(0, 16)
+      this.cards.push(new Tile(this, i + 1.5, 7, frame))
+    }
   }
 
   pointerMove = (pointer) => {
     if (this.draggingTile) return
+    const zoomFactor = 1 / this.cameras.main.zoom
     if (this.draggingCamera) {
-      this.cameras.main.scrollX = this._cameraX + (this._dragX - pointer.x)
-      this.cameras.main.scrollY = this._cameraY + (this._dragY - pointer.y)
+      this.cameras.main.scrollX =
+        this._cameraX + (this._dragX - pointer.x) * zoomFactor
+      this.cameras.main.scrollY =
+        this._cameraY + (this._dragY - pointer.y) * zoomFactor
     }
   }
 
@@ -61,7 +75,7 @@ export default class extends Phaser.Scene {
   }
 
   dragStart = (_, tile) => {
-    this.draggingTile = true
+    this.draggingTile = tile
     tile.startX = tile.x
     tile.startY = tile.y
   }

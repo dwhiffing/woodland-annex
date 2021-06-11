@@ -19,7 +19,7 @@ export default class extends Phaser.Scene {
         60,
       )
     })
-    this.load.spritesheet('cash', 'assets/images/cash.png', {
+    this.load.spritesheet('tiles', 'assets/images/tiles.png', {
       frameWidth: 256,
       frameHeight: 256,
     })

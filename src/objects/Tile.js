@@ -2,14 +2,13 @@ import { TILE_SIZE } from '../constants'
 import { Slot } from './Slot'
 
 export class Tile extends Phaser.Physics.Arcade.Sprite {
-  constructor(scene, x, y) {
-    super(scene, x * TILE_SIZE, y * TILE_SIZE, 'cash')
+  constructor(scene, x, y, index) {
+    super(scene, x * TILE_SIZE, y * TILE_SIZE, 'tiles', index)
     this._x = x
     this._y = y
     this.scene = scene
-    this.setOrigin(0)
+    this.setOrigin(0.5)
     this.setDepth(10)
-    this.setTintFill(0x999999)
     this.setInteractive()
     this.scene.input.setDraggable(this)
     this.scene.add.existing(this)
@@ -19,7 +18,6 @@ export class Tile extends Phaser.Physics.Arcade.Sprite {
   disable() {
     this.scene.input.setDraggable(this, false)
     this.setDepth(1)
-    this.setTintFill(0x444444)
     this.addSlots()
   }
 
@@ -37,8 +35,28 @@ export class Tile extends Phaser.Physics.Arcade.Sprite {
 }
 
 const DIRECTIONS = [
-  [1, 0],
-  [-1, 0],
-  [0, 1],
   [0, -1],
+  [1, 0],
+  [0, 1],
+  [-1, 0],
+]
+
+const ATTRIBUTES = [
+  [0, 0, 0, 0],
+  [0, 0, 1, 0],
+  [1, 0, 1, 0],
+  [0, 1, 1, 0],
+  [1, 1, 1, 0],
+  [1, 1, 1, 1],
+  [2, 0, 0, 0],
+  [2, 0, 0, 2],
+  [2, 0, 2, 0],
+  [0, 2, 0, 2],
+  [2, 2, 0, 2],
+  [2, 2, 2, 2],
+  [2, 1, 0, 1],
+  [2, 1, 1, 2],
+  [2, 0, 1, 1],
+  [2, 1, 1, 1],
+  [2, 2, 1, 2],
 ]
