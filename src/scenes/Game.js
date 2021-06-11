@@ -1,4 +1,6 @@
-const TILE_SIZE = 250
+import { TILE_SIZE } from '../constants'
+import { Tile } from '../objects/Tile'
+
 export default class extends Phaser.Scene {
   constructor() {
     super({ key: 'Game' })
@@ -10,78 +12,81 @@ export default class extends Phaser.Scene {
   }
 
   create() {
+    this.cameras.main.setZoom(1)
+    this.cameras.main.centerOn(TILE_SIZE / 2, TILE_SIZE / 2)
+
+    // Create initial tile
+    this.board = {}
     const tile = new Tile(this, 0, 0)
-    const cx = this.width / 2
-    const cy = this.height / 2
-    var container = this.add.container(cx, cy, [tile])
-    container.setSize(500, 500)
-    new Slot(this, container, TILE_SIZE, 0)
-    new Slot(this, container, -TILE_SIZE, 0)
-    new Slot(this, container, 0, TILE_SIZE)
-    new Slot(this, container, 0, -TILE_SIZE)
+    this.add.existing(tile)
+    tile.disable()
 
-    for (let i = 0; i < 4; i++) {
-      const tile = new Tile(
-        this,
-        TILE_SIZE + TILE_SIZE * i,
-        this.height - TILE_SIZE,
-      )
+    // Create hand of tiles
+    this.drawCards()
 
-      this.add.existing(tile)
-      tile.setInteractive()
-      this.input.setDraggable(tile)
+    this.input.on('pointermove', this.pointerMove)
+    this.input.on('pointerdown', this.pointerDown)
+    this.input.on('pointerup', this.pointerUp)
+    this.input.on('dragstart', this.dragStart)
+    this.input.on('drag', this.drag)
+    this.input.on('drop', this.drop)
+    this.input.on('dragend', this.dragEnd)
+  }
+
+  drawCards = () => {
+    this.cards = []
+    for (let i = 0; i < 6; i++) this.cards.push(new Tile(this, i + 1, 6.5))
+  }
+
+  pointerMove = (pointer) => {
+    if (this.draggingTile) return
+    if (this.draggingCamera) {
+      this.cameras.main.scrollX = this._cameraX + (this._dragX - pointer.x)
+      this.cameras.main.scrollY = this._cameraY + (this._dragY - pointer.y)
     }
-
-    this.input.on('dragstart', (pointer, tile, dragX, dragY) => {
-      tile.startX = tile.x
-      tile.startY = tile.y
-    })
-
-    this.input.on('drag', (pointer, tile, dragX, dragY) => {
-      tile.x = dragX
-      tile.y = dragY
-    })
-
-    this.input.on('drop', (pointer, tile, zone) => {
-      container.add([tile])
-      tile.x = zone.sprite.x
-      tile.y = zone.sprite.y
-      this.input.setDraggable(tile, false)
-      zone.destroy()
-    })
-
-    this.input.on('dragend', (pointer, tile) => {
-      // tile.x = tile.startX
-      // tile.y = tile.startY
-    })
   }
 
-  update() {}
-}
-
-class Tile extends Phaser.Physics.Arcade.Sprite {
-  constructor(scene, x, y) {
-    super(scene, x, y, 'cash')
-
-    this.scene = scene
-    this.setOrigin(0.5)
-    // this.setCollideWorldBounds(true, 0.2, 0.2)
+  pointerDown = (pointer) => {
+    if (this.draggingTile) return
+    this.draggingCamera = true
+    this._dragX = pointer.x
+    this._dragY = pointer.y
+    this._cameraX = this.cameras.main.scrollX
+    this._cameraY = this.cameras.main.scrollY
   }
-}
 
-class Slot extends Phaser.GameObjects.Zone {
-  constructor(scene, container, x, y) {
-    super(scene, x + container.x, y + container.y, TILE_SIZE, TILE_SIZE)
-
-    this.scene = scene
-    this.setDropZone()
-    // this.setCollideWorldBounds(true, 0.2, 0.2)
-    this.sprite = new Tile(scene, x, y)
-    this.sprite.setTintFill(0x00ff00)
-    container.add([this.sprite])
+  pointerUp = (_, tile) => {
+    if (this.draggingTile) return
+    this.draggingCamera = false
   }
-  destroy() {
-    this.sprite.destroy()
-    super.destroy()
+
+  dragStart = (_, tile) => {
+    this.draggingTile = true
+    tile.startX = tile.x
+    tile.startY = tile.y
+  }
+
+  drag = (_, tile, dragX, dragY) => {
+    tile.x = dragX
+    tile.y = dragY
+  }
+
+  drop = (_, tile, zone) => {
+    tile.x = zone.sprite.x
+    tile.y = zone.sprite.y
+    tile._x = zone._x
+    tile._y = zone._y
+    this.cards = this.cards.filter((c) => c !== tile)
+    if (this.cards.length === 0) this.drawCards()
+
+    tile.disable()
+    zone.destroy()
+  }
+
+  dragEnd = (_, tile) => {
+    this.draggingTile = false
+    if (tile.placed) return
+    tile.x = tile.startX
+    tile.y = tile.startY
   }
 }
