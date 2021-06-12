@@ -5,7 +5,7 @@ export class Slot extends Phaser.GameObjects.Zone {
     super(scene, x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
     this._x = x
     this._y = y
-    this.attributes = attributes
+    this._attributes = attributes
 
     this.scene = scene
     this.setDropZone()
@@ -24,8 +24,21 @@ export class Slot extends Phaser.GameObjects.Zone {
     this.sprite.setDepth(0)
     getDebugText(this.scene, x, y)
   }
+
+  get attributes() {
+    return this._attributes
+  }
+
   destroy() {
     this.sprite.destroy()
     super.destroy()
+  }
+
+  hover() {
+    this.sprite.setTintFill(0x999999)
+  }
+
+  unhover() {
+    this.sprite.setTintFill(0x666666)
   }
 }

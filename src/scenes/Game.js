@@ -26,6 +26,8 @@ export default class extends Phaser.Scene {
     this.input.keyboard.on('keydown-SPACE', () => {
       this.draggingTile.angle += 90
       if (this.draggingTile.angle >= 360) this.draggingTile.angle = 0
+      this.resetSlots()
+      this.hoverSlots(this.draggingTile)
     })
 
     // TODO: making zoom work will take a bunch of random adjustments
@@ -80,11 +82,7 @@ export default class extends Phaser.Scene {
     this.draggingTile = tile
     tile.startX = tile.x
     tile.startY = tile.y
-    const attrs = tile.getAttributes()
-    console.log(
-      attrs,
-      Object.entries(this.board).filter(([k, v]) => isMatch(v, attrs)),
-    )
+    this.hoverSlots(tile)
   }
 
   drag = (_, tile, dragX, dragY) => {
@@ -93,7 +91,7 @@ export default class extends Phaser.Scene {
   }
 
   drop = (_, tile, zone) => {
-    if (!isMatch(zone.attributes, tile.getAttributes())) return
+    if (!isMatch(zone._attributes, tile.attributes)) return
 
     tile.x = zone.sprite.x
     tile.y = zone.sprite.y
@@ -103,6 +101,7 @@ export default class extends Phaser.Scene {
     this.cards = this.cards.filter((c) => c !== tile)
     if (this.cards.length === 0) this.drawCards()
 
+    this.resetSlots()
     tile.disable()
     zone.destroy()
     // console.log(this.board)
@@ -110,9 +109,21 @@ export default class extends Phaser.Scene {
 
   dragEnd = (_, tile) => {
     this.draggingTile = false
+
+    this.resetSlots()
     if (tile.placed) return
     tile.unhover()
     tile.x = tile.startX
     tile.y = tile.startY
+  }
+
+  hoverSlots(tile) {
+    Object.values(this.board)
+      .filter((v) => isMatch(v.attributes, tile.attributes))
+      .forEach((s) => s.hover())
+  }
+
+  resetSlots() {
+    Object.values(this.board).forEach((s) => s.unhover())
   }
 }

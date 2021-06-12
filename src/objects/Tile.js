@@ -13,7 +13,7 @@ export class Tile extends Phaser.Physics.Arcade.Sprite {
     this.scene.input.setDraggable(this)
     this.scene.add.existing(this)
     this.setScrollFactor(0)
-    this.attributes = ATTRIBUTES[index]
+    this._attributes = ATTRIBUTES[index]
     this.unhover()
     this.on('pointerover', this.hover)
     this.on('pointerout', this.unhover)
@@ -21,9 +21,9 @@ export class Tile extends Phaser.Physics.Arcade.Sprite {
     getDebugText(this.scene, x, y)
   }
 
-  getAttributes = () => {
+  get attributes() {
     const tileAngle = (this.angle < 0 ? this.angle + 360 : this.angle) / 90
-    const result = rotate(this.attributes, -tileAngle)
+    const result = rotate(this._attributes, -tileAngle)
     return result
   }
 
@@ -47,25 +47,25 @@ export class Tile extends Phaser.Physics.Arcade.Sprite {
   addSlots() {
     this.setScrollFactor(1)
     this.placed = true
-    const _attributes = this.getAttributes()
-    this.scene.board[`${this._x},${this._y}`] = _attributes
+    this.scene.board[`${this._x},${this._y}`] = this
 
     DIRECTIONS.forEach(([x, y], index) => {
       let attributes = [null, null, null, null]
-      if (index === 0) attributes[2] = _attributes[0]
-      if (index === 1) attributes[3] = _attributes[1]
-      if (index === 2) attributes[0] = _attributes[2]
-      if (index === 3) attributes[1] = _attributes[3]
+      if (index === 0) attributes[2] = this.attributes[0]
+      if (index === 1) attributes[3] = this.attributes[1]
+      if (index === 2) attributes[0] = this.attributes[2]
+      if (index === 3) attributes[1] = this.attributes[3]
       const key = `${this._x + x},${this._y + y}`
       const data = this.scene.board[key]
       if (!data) {
-        new Slot(this.scene, this._x + x, this._y + y, attributes)
-        this.scene.board[key] = attributes
+        const slot = new Slot(this.scene, this._x + x, this._y + y, attributes)
+        this.scene.board[key] = slot
       } else {
-        if (index === 0) this.scene.board[key][2] = _attributes[0]
-        if (index === 1) this.scene.board[key][3] = _attributes[1]
-        if (index === 2) this.scene.board[key][0] = _attributes[2]
-        if (index === 3) this.scene.board[key][1] = _attributes[3]
+        const item = this.scene.board[key]
+        if (index === 0) item.attributes[2] = this.attributes[0]
+        if (index === 1) item.attributes[3] = this.attributes[1]
+        if (index === 2) item.attributes[0] = this.attributes[2]
+        if (index === 3) item.attributes[1] = this.attributes[3]
       }
     })
   }
