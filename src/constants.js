@@ -1,4 +1,32 @@
 export const TILE_SIZE = 250
+// top, right, bottom, left
+export const DIRECTIONS = [
+  [0, -1],
+  [1, 0],
+  [0, 1],
+  [-1, 0],
+]
+
+export const ATTRIBUTES = [
+  [0, 0, 0, 0],
+  [0, 0, 1, 0],
+  [1, 0, 1, 0],
+  [0, 1, 1, 0],
+  [1, 1, 1, 0],
+  [1, 1, 1, 1],
+  [2, 0, 0, 0],
+  [2, 0, 0, 2],
+  [2, 0, 2, 0],
+  [0, 2, 0, 2],
+  [2, 2, 0, 2],
+  [2, 2, 2, 2],
+  [2, 1, 0, 1],
+  [2, 0, 1, 1],
+  [2, 1, 1, 2],
+  [2, 1, 1, 1],
+  [2, 2, 1, 2],
+]
+
 export const getDebugText = (scene, x, y) => {
   const text = scene.add.text(
     x * TILE_SIZE - TILE_SIZE / 2 + 5,
@@ -8,5 +36,9 @@ export const getDebugText = (scene, x, y) => {
   )
   text.setDepth(10)
 }
-export const isMatch = (a, b) =>
-  a.some((t) => t == null) && a.every((a, i) => a == null || a === b[i])
+export const doesTileFit = (slot, tile) =>
+  slot.attributes.some((t) => t == null) &&
+  slot.attributes.every((a, i) => a == null || a === tile.attributes[i])
+
+export const isConnected = (tileA, tileB, index) =>
+  tileA.attributes.every((a, i) => a === index && tileB.attributes[i] === index)

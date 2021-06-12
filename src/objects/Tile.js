@@ -1,4 +1,4 @@
-import { getDebugText, TILE_SIZE } from '../constants'
+import { ATTRIBUTES, DIRECTIONS, getDebugText, TILE_SIZE } from '../constants'
 import { Slot } from './Slot'
 
 export class Tile extends Phaser.Physics.Arcade.Sprite {
@@ -7,6 +7,7 @@ export class Tile extends Phaser.Physics.Arcade.Sprite {
     this._x = x
     this._y = y
     this.scene = scene
+    this.index = index
     this.setOrigin(0.5)
     this.setDepth(10)
     this.setInteractive()
@@ -50,53 +51,32 @@ export class Tile extends Phaser.Physics.Arcade.Sprite {
     this.scene.board[`${this._x},${this._y}`] = this
 
     DIRECTIONS.forEach(([x, y], index) => {
-      let attributes = [null, null, null, null]
-      if (index === 0) attributes[2] = this.attributes[0]
-      if (index === 1) attributes[3] = this.attributes[1]
-      if (index === 2) attributes[0] = this.attributes[2]
-      if (index === 3) attributes[1] = this.attributes[3]
       const key = `${this._x + x},${this._y + y}`
-      const data = this.scene.board[key]
-      if (!data) {
-        const slot = new Slot(this.scene, this._x + x, this._y + y, attributes)
-        this.scene.board[key] = slot
-      } else {
-        const item = this.scene.board[key]
-        if (index === 0) item.attributes[2] = this.attributes[0]
-        if (index === 1) item.attributes[3] = this.attributes[1]
-        if (index === 2) item.attributes[0] = this.attributes[2]
-        if (index === 3) item.attributes[1] = this.attributes[3]
-      }
+      const item = this.scene.board[key]
+      if (item) return copyAttributes(this, item, index)
+
+      let temp = { attributes: [null, null, null, null] }
+      copyAttributes(this, temp, index)
+      this.scene.board[key] = new Slot(
+        this.scene,
+        this._x + x,
+        this._y + y,
+        temp.attributes,
+      )
     })
   }
 }
 
-const DIRECTIONS = [
-  [0, -1],
-  [1, 0],
-  [0, 1],
-  [-1, 0],
-]
-
-const ATTRIBUTES = [
-  [0, 0, 0, 0],
-  [0, 0, 1, 0],
-  [1, 0, 1, 0],
-  [0, 1, 1, 0],
-  [1, 1, 1, 0],
-  [1, 1, 1, 1],
-  [2, 0, 0, 0],
-  [2, 0, 0, 2],
-  [2, 0, 2, 0],
-  [0, 2, 0, 2],
-  [2, 2, 0, 2],
-  [2, 2, 2, 2],
-  [2, 1, 0, 1],
-  [2, 0, 1, 1],
-  [2, 1, 1, 2],
-  [2, 1, 1, 1],
-  [2, 2, 1, 2],
-]
+const copyAttributes = (source, target, direction) => {
+  // direction is up, copy source top to target bottom
+  if (direction === 0) target.attributes[2] = source.attributes[0]
+  // direction is right, copy source right to target left
+  if (direction === 1) target.attributes[3] = source.attributes[1]
+  // direction is down, copy source bottom to target top
+  if (direction === 2) target.attributes[0] = source.attributes[2]
+  // direction is left, copy source left to target right
+  if (direction === 3) target.attributes[1] = source.attributes[3]
+}
 
 const rotate = function (arr, n) {
   n = n % arr.length
