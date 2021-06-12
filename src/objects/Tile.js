@@ -15,6 +15,7 @@ export class Tile extends Phaser.Physics.Arcade.Sprite {
     this.scene.add.existing(this)
     this.setScrollFactor(0)
     this._attributes = ATTRIBUTES[index]
+    this.open = [1, 1, 1, 1]
     this.unhover()
     this.on('pointerover', this.hover)
     this.on('pointerout', this.unhover)
@@ -26,6 +27,10 @@ export class Tile extends Phaser.Physics.Arcade.Sprite {
     const tileAngle = (this.angle < 0 ? this.angle + 360 : this.angle) / 90
     const result = rotate(this._attributes, -tileAngle)
     return result
+  }
+
+  close(direction) {
+    this.open[direction] = 0
   }
 
   disable() {
@@ -57,12 +62,13 @@ export class Tile extends Phaser.Physics.Arcade.Sprite {
 
       let temp = { attributes: [null, null, null, null] }
       copyAttributes(this, temp, index)
-      this.scene.board[key] = new Slot(
+      const slot = new Slot(
         this.scene,
         this._x + x,
         this._y + y,
         temp.attributes,
       )
+      this.scene.board[key] = slot
     })
   }
 }

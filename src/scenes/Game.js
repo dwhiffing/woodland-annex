@@ -1,4 +1,4 @@
-import { DIRECTIONS, doesTileFit } from '../constants'
+import { DIRECTIONS, doesTileFit, isConnected } from '../constants'
 import { Tile } from '../objects/Tile'
 import pick from 'lodash/pick'
 
@@ -18,6 +18,7 @@ export default class extends Phaser.Scene {
 
     // Create initial tile
     this.board = {}
+    this.roads = []
     const tile = new Tile(this, 0, 0)
     this.add.existing(tile)
     tile.disable()
@@ -110,111 +111,69 @@ export default class extends Phaser.Scene {
     if (this.cards.length === 0) this.drawCards()
 
     this.resetSlots()
+
+    const connectedTiles = this.getOpenNeighbours(tile).filter(
+      (t) =>
+        tile.attributes[t.index] !== 0 &&
+        tile.attributes[t.index] === t.attributes[OPPOSITE[t.index]],
+    )
+    const connectedRoads = connectedTiles
+      .map((tile) => tile.road)
+      .filter((r) => !!r)
+    connectedRoads.forEach((road) => {
+      const index = road.findIndex((t) => connectedTiles[0] === t)
+      tile.road = road
+      if (index === 0) {
+        road.unshift(tile)
+      } else {
+        road.push(tile)
+      }
+    })
+    if (connectedRoads.length === 0 && connectedTiles.length > 0) {
+      this.roads.push([tile, connectedTiles[0]])
+      tile.road = this.roads[this.roads.length - 1]
+      connectedTiles[0].road = tile.road
+    }
+    this.roads.forEach((r) => this.logTiles(r))
     tile.disable()
     zone.destroy()
 
-    const groups = this.getLineGroup()
     this.lineGraphics.clear()
-    groups.forEach((g, groupIndex) => {
-      this.lineGraphics.lineStyle(10, LINE_COLORS[groupIndex], 1)
+    this.roads.forEach((road, roadIndex) => {
+      this.lineGraphics.lineStyle(10, LINE_COLORS[roadIndex], 1)
 
-      g.forEach((t, i) => {
-        const next = g[i + 1]
+      road.forEach((t, i, arr) => {
+        const next = arr[i + 1]
         if (next) this.lineGraphics.lineBetween(t.x, t.y, next.x, next.y)
       })
     })
   }
 
-  logTiles = (tiles, ...rest) =>
-    console.log(
-      tiles.map((t) => pick(t, ['_x', '_y', 'attributes'])),
-      ...rest,
-    )
-
-  getNeighboursForTile = (tile, tiles) =>
-    tile.attributes
-      .map((a, i) => (a === 1 ? i : null))
-      .map((dir) => {
-        if (typeof dir !== 'number') return null
-        const [x, y] = DIRECTIONS[dir]
-        return tiles.find((t) => t._x === tile._x + x && t._y === tile._y + y)
-      })
-
-  getLineGroup = () => {
-    const tiles = Object.values(this.board).filter((t) => t.type === 'Sprite')
-    // sort tiles by neighbour count ascending, then pull 3/4 way tiles to the top
-    let lineTiles = tiles
-      .filter((t) => t.attributes.includes(1))
-      .sort((a, b) => {
-        const aNeighbourCount = this.getNeighboursForTile(a, tiles).filter(
-          (t) => !!t,
-        ).length
-        const bNeighbourCount = this.getNeighboursForTile(b, tiles).filter(
-          (t) => !!t,
-        ).length
-        return aNeighbourCount - bNeighbourCount
-      })
-      .sort((a, b) => {
-        if (
-          (a.index === 4 && b.index === 4) ||
-          (a.index !== 4 && b.index !== 4)
-        )
-          return 0
-        return a.index === 4 ? -1 : 1
-      })
-
-    lineTiles.forEach((t) => {
-      t.checkedDirections = []
-    })
-
-    let groupIndex = 0
-    let groups = [[]]
-    let neighbour
-    while (
-      lineTiles.some((t) =>
-        this.getNeighboursForTile(t, lineTiles).find(
-          (n, i) => !!n && !t.checkedDirections.includes(i),
-        ),
-      )
-    ) {
-      let currentGroup = groups[groupIndex]
-      let current = lineTiles.find((t) =>
-        this.getNeighboursForTile(t, lineTiles).find(
-          (n, i) => !!n && !t.checkedDirections.includes(i),
-        ),
-      )
-
-      while (current) {
-        currentGroup.push(current)
-
-        // look through remaining tiles in lineTiles to find one that connects to current
-        const availableNeighbours = this.getNeighboursForTile(
-          current,
-          lineTiles,
-        )
-        const _neighbour = availableNeighbours.find(
-          (n, i) => !!n && !current.checkedDirections.includes(i),
-        )
-        neighbour = lineTiles.find((t) => t === _neighbour)
-        if (!neighbour) {
-          current = null
-          continue
-        }
-        const neighbourIndex = availableNeighbours.findIndex(
-          (n) => n === neighbour,
-        )
-        current.checkedDirections.push(neighbourIndex)
-        neighbour.checkedDirections.push(OPPOSITE[neighbourIndex])
-        // if (current && current.index === 4)
-        current = neighbour
-      }
-
-      groupIndex++
-      groups.push([])
-    }
-
-    return groups.filter((g) => g.length > 1)
+  get tiles() {
+    return Object.values(this.board).filter((t) => t.type === 'Sprite')
   }
+
+  logTiles = (tiles) =>
+    console.log(tiles.map((t) => pick(t, ['_x', '_y', 'attributes'])))
+
+  getOpenNeighbours = (tile, tiles = this.tiles) =>
+    this.getAdjacentTiles(tile, tiles)
+      .map((t, index) => {
+        if (t) t.index = index
+        return t
+      })
+      .filter((t, i) => {
+        if (!t || !t.open) return false
+        if (i === 0) return t.open[2]
+        if (i === 1) return t.open[3]
+        if (i === 2) return t.open[0]
+        if (i === 3) return t.open[1]
+      })
+
+  getAdjacentTiles = (tile, tiles = this.tiles) =>
+    DIRECTIONS.map(([x, y]) =>
+      tiles.find((t) => t._x === tile._x + x && t._y === tile._y + y),
+    )
 
   dragEnd = (_, tile) => {
     this.draggingTile = false
