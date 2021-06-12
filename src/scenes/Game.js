@@ -55,8 +55,7 @@ export default class extends Phaser.Scene {
     for (let i = 0; i < 6; i++) {
       // const frame = Phaser.Math.RND.between(0, 16)
       const frame = Phaser.Math.RND.pick([
-        // 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 1, 4, 4,
-        4, 4,
+        3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 1, 4, 4,
       ])
       this.cards.push(new Tile(this, i + 1.5, 7, frame))
     }
@@ -115,10 +114,8 @@ export default class extends Phaser.Scene {
     zone.destroy()
 
     const groups = this.getLineGroup()
-    console.log(groups.length)
     this.lineGraphics.clear()
     groups.forEach((g, groupIndex) => {
-      this.logTiles(g, LINE_COLORS[groupIndex])
       this.lineGraphics.lineStyle(10, LINE_COLORS[groupIndex], 1)
 
       g.forEach((t, i) => {
@@ -137,20 +134,24 @@ export default class extends Phaser.Scene {
   getNeighboursForTile = (tile, tiles) =>
     tile.attributes
       .map((a, i) => (a === 1 ? i : null))
-      .filter((i) => typeof i === 'number')
       .map((dir) => {
+        if (typeof dir !== 'number') return null
         const [x, y] = DIRECTIONS[dir]
         return tiles.find((t) => t._x === tile._x + x && t._y === tile._y + y)
       })
-      .filter((t) => !!t)
 
   getLineGroup = () => {
     const tiles = Object.values(this.board).filter((t) => t.type === 'Sprite')
+    // sort tiles by neighbour count ascending, then pull 3/4 way tiles to the top
     let lineTiles = tiles
       .filter((t) => t.attributes.includes(1))
       .sort((a, b) => {
-        const aNeighbourCount = this.getNeighboursForTile(a, tiles).length
-        const bNeighbourCount = this.getNeighboursForTile(b, tiles).length
+        const aNeighbourCount = this.getNeighboursForTile(a, tiles).filter(
+          (t) => !!t,
+        ).length
+        const bNeighbourCount = this.getNeighboursForTile(b, tiles).filter(
+          (t) => !!t,
+        ).length
         return aNeighbourCount - bNeighbourCount
       })
       .sort((a, b) => {
@@ -159,14 +160,30 @@ export default class extends Phaser.Scene {
           (a.index !== 4 && b.index !== 4)
         )
           return 0
-        return a.index === 4 ? 1 : -1
+        return a.index === 4 ? -1 : 1
       })
+
+    lineTiles.forEach((t) => {
+      t.checkedDirections = []
+    })
 
     let groupIndex = 0
     let groups = [[]]
-    while (lineTiles.length > 0) {
+    let neighbour
+    while (
+      lineTiles.some((t) =>
+        this.getNeighboursForTile(t, lineTiles).find(
+          (n, i) => !!n && !t.checkedDirections.includes(i),
+        ),
+      )
+    ) {
       let currentGroup = groups[groupIndex]
-      let current = lineTiles.shift()
+      let current = lineTiles.find((t) =>
+        this.getNeighboursForTile(t, lineTiles).find(
+          (n, i) => !!n && !t.checkedDirections.includes(i),
+        ),
+      )
+
       while (current) {
         currentGroup.push(current)
 
@@ -175,19 +192,27 @@ export default class extends Phaser.Scene {
           current,
           lineTiles,
         )
-        current = availableNeighbours[0]
-        if (current && current.index === 4) {
-          currentGroup.push(current)
-          current = null
-        }
-        lineTiles = lineTiles.filter(
-          (t) => this.getNeighboursForTile(t, lineTiles).length > 0,
+        const _neighbour = availableNeighbours.find(
+          (n, i) => !!n && !current.checkedDirections.includes(i),
         )
+        neighbour = lineTiles.find((t) => t === _neighbour)
+        if (!neighbour) {
+          current = null
+          continue
+        }
+        const neighbourIndex = availableNeighbours.findIndex(
+          (n) => n === neighbour,
+        )
+        current.checkedDirections.push(neighbourIndex)
+        neighbour.checkedDirections.push(OPPOSITE[neighbourIndex])
+        // if (current && current.index === 4)
+        current = neighbour
       }
 
       groupIndex++
       groups.push([])
     }
+
     return groups.filter((g) => g.length > 1)
   }
 
@@ -213,6 +238,10 @@ export default class extends Phaser.Scene {
 }
 
 const LINE_COLORS = [
-  0x00ff00, 0xff0000, 0x0000ff, 0xff00ff, 0x00ffff, 0xffff00, 0xffffff,
-  0x000000, 0x111, 0x222, 0x333, 0x444, 0x555, 0x666, 0x777, 0x888, 0x999,
+  0xe6194b, 0x3cb44b, 0xffe119, 0x4363d8, 0xf58231, 0x911eb4, 0x46f0f0,
+  0xf032e6, 0xbcf60c, 0xfabebe, 0x008080, 0xe6beff, 0x9a6324, 0xfffac8,
+  0x800000, 0xaaffc3, 0x808000, 0xffd8b1, 0x000075, 0x808080, 0xffffff,
+  0x000000,
 ]
+
+const OPPOSITE = [2, 3, 0, 1]
