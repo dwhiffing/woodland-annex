@@ -188,6 +188,7 @@ export default class extends Phaser.Scene {
     this.resetSlots()
     this.updateRoads(tile)
     this.growForests(tile)
+    // TODO: bug with next level detection, fails to detect join sometimes
     const nextLevel = this.tiles
       .filter((t) => VILLAGES.includes(t.index))
       .every(
@@ -223,12 +224,12 @@ export default class extends Phaser.Scene {
     let villages = []
     let distance = 3
     let count = 1
-    let range = Math.max(2, this.levelIndex)
+    let range = Math.max(5, Math.floor(this.levelIndex * 0.75))
     let indexes = [9, 10, 11]
     let forestIndexes = [13, 14, 15, 16, 18, 19, 21, 12]
 
     if (current === 'medium') {
-      distance = 4
+      distance = 3
       timer = 10
       indexes = [7, 8, 9, 10, 11]
       cards = [
@@ -239,7 +240,7 @@ export default class extends Phaser.Scene {
     }
 
     if (current === 'hard') {
-      distance = 4
+      distance = 3
       count = 1
       timer = 8
       indexes = [7, 8, 9]
@@ -268,7 +269,9 @@ export default class extends Phaser.Scene {
       const y = Phaser.Math.RND.pick([-1, 0, 1]) * range
       return [x, y, index, angle]
     }
+    let attempts = 0
     do {
+      attempts++
       village = _getNewVillage()
       let [x, y] = village
       distances = this.tiles
@@ -279,7 +282,7 @@ export default class extends Phaser.Scene {
       if (distances.some((d) => d < distance)) isValid = false
       if (Object.values(this.board).some((t) => t._x === x && t._y === y))
         isValid = false
-    } while (!isValid)
+    } while (!isValid && attempts < 5000)
     return village
   }
 
