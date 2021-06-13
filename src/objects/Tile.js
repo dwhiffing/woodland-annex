@@ -56,13 +56,13 @@ export class Tile extends Phaser.Physics.Arcade.Sprite {
 
   unhover() {
     this.setScale(1)
-    this.setDepth(10)
+    this.setDepth(this.disabled ? 1 : 21)
   }
 
   hover() {
     if (this.disabled) return
     this.setScale(1.25)
-    this.setDepth(20)
+    this.setDepth(25)
   }
 
   addSlots() {

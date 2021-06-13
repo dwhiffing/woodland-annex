@@ -26,6 +26,10 @@ export default class extends Phaser.Scene {
     this.load.audio('music', 'assets/audio/music.mp3')
     this.load.audio('pickup', 'assets/audio/cash1.mp3')
     this.load.audio('drop', 'assets/audio/cash2.mp3')
+    this.load.audio('spin', 'assets/audio/coin2.mp3')
+    this.load.audio('connect', 'assets/audio/connect.wav')
+    this.load.audio('forest', 'assets/audio/forest.mp3')
+    this.load.audio('village', 'assets/audio/village.mp3')
     this.load.audio('place', 'assets/audio/cash-breakdown.mp3')
     this.load.image('background', 'assets/images/background.png')
     this.load.image('background2', 'assets/images/background2.png')
@@ -48,7 +52,6 @@ export default class extends Phaser.Scene {
         active: () => {
           progress.destroy()
           this.scene.start('Menu')
-          // this.scene.start('Game')
         },
       })
     })

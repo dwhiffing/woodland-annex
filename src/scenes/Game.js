@@ -18,7 +18,12 @@ export default class extends Phaser.Scene {
     this.pickupSound = this.sound.add('pickup', { volume: 0.3 })
     this.dropSound = this.sound.add('drop', { volume: 0.4 })
     this.placeSound = this.sound.add('place', { volume: 0.4 })
+    this.spinSound = this.sound.add('spin', { volume: 0.4 })
+    this.villageSound = this.sound.add('village', { volume: 0.4 })
+    this.forestSound = this.sound.add('forest', { volume: 0.4 })
+    this.connectSound = this.sound.add('connect', { volume: 0.4 })
 
+    this.cards = []
     this.mute = this.add.image(this.width - 130, this.height - 180, 'icon')
     this.mute.setOrigin(0)
     this.mute.setFrame(window.isMuted ? 2 : 1)
@@ -34,14 +39,24 @@ export default class extends Phaser.Scene {
   create() {
     const background = this.add.image(0, 0, 'background2').setScale(2)
     background.setDepth(-3).setOrigin(0).setScrollFactor(0)
+    const hud = this.add
+      .rectangle(0, this.height - 400, this.width, 400, 0x000000)
+      .setScrollFactor(0)
+      .setOrigin(0)
+      .setAlpha(0.6)
+      .setDepth(20)
 
     this.cameras.main.setZoom(1)
     this.cameras.main.centerOn(250, 200)
+    this.score = 0
 
     // Create initial tile
     this.board = {}
+    this.cards = []
     this.roads = []
     this.levelIndex = 0
+    this.level = this.getNewLevel()
+
     const tile = new Tile(this, 0, 0, 9, 0)
     this.add.existing(tile)
     tile.disable()
@@ -53,11 +68,19 @@ export default class extends Phaser.Scene {
       this.drawCards()
     })
 
+    this.input.keyboard.on('keydown-X', () => {
+      this.levelIndex++
+      this.level = this.getNewLevel()
+      this.addVillage()
+    })
+
     this.input.keyboard.on('keydown-SPACE', () => {
+      if (!this.draggingTile) return
       this.draggingTile.angle += 90
       if (this.draggingTile.angle >= 360) this.draggingTile.angle = 0
       this.resetSlots()
       this.hoverSlots(this.draggingTile)
+      this.spinSound.play()
     })
 
     this.lineGraphics = this.add.graphics()
@@ -81,22 +104,32 @@ export default class extends Phaser.Scene {
 
   addVillage = () => {
     // const index = Phaser.Math.RND.pick(VILLAGES)
-    LEVELS[this.levelIndex].villages.forEach(([x, y, index, angle]) => {
+    this.villageSound.play()
+    this.level.villages.forEach(([x, y, index, angle]) => {
       const tile = new Tile(this, x, y, index, angle)
       this.add.existing(tile)
       tile.disable()
+      this.cameras.main.pan(tile.x, tile.y, 800, 'Quad.easeInOut')
     })
-    this.villageTimer = LEVELS[this.levelIndex].timer
+    this.villageTimer = this.level.timer
     this.timerText.text = this.villageTimer
     if (this.villageTimer > 0) this.timerText.setAlpha(1)
   }
 
+  getDistance = (one, two) => {
+    var a = one.x - two.x
+    var b = one.y - two.y
+    return Math.sqrt(a * a + b * b)
+  }
+
   drawCards = (n = 3) => {
-    this.cards && this.cards.forEach((c) => c.destroy())
-    this.cards = []
+    // this.cards && this.cards.forEach((c) => c.destroy())
+    this.cards = this.cards || []
     for (let i = 0; i < n; i++) {
-      const frame = Phaser.Math.RND.pick(LEVELS[this.levelIndex].cards)
-      this.cards.push(new Tile(this, i + 3, 7, frame))
+      if (!this.cards[i]) {
+        const frame = Phaser.Math.RND.pick(this.level.cards)
+        this.cards[i] = new Tile(this, i + 3, 7, frame).setDepth(25)
+      }
     }
   }
 
@@ -141,13 +174,15 @@ export default class extends Phaser.Scene {
   drop = (_, tile, zone) => {
     if (!doesTileFit(zone, tile)) return
 
+    if (_.y > 1550) return
+
     this.placeSound.play()
     tile.x = zone.sprite.x
     tile.y = zone.sprite.y
     tile._x = zone._x
     tile._y = zone._y
 
-    this.cards = this.cards.filter((c) => c !== tile)
+    this.cards = this.cards.map((c) => (c !== tile ? c : null))
     if (this.cards.length === 0) this.drawCards()
 
     this.resetSlots()
@@ -162,8 +197,8 @@ export default class extends Phaser.Scene {
       )
     if (nextLevel) {
       this.levelIndex++
-    }
-    if (nextLevel) {
+      this.connectSound.play()
+      this.level = this.getNewLevel()
       this.addVillage()
     } else if (this.villageTimer > 0) {
       this.villageTimer--
@@ -176,6 +211,72 @@ export default class extends Phaser.Scene {
     zone.destroy()
 
     this.drawCards()
+  }
+
+  getNewLevel() {
+    let current = LEVELS[this.levelIndex]
+    if (!current) current = LEVELS[LEVELS.length - 1]
+    if (typeof current !== 'string') return current
+
+    let cards = [3, 2, 3, 2, 3, 2, 3, 2, 4, 5, 4, 5, 18]
+    let timer = 15
+    let villages = []
+    let distance = 3
+    let count = 1
+    let range = Math.max(2, this.levelIndex)
+    let indexes = [9, 10, 11]
+
+    if (current === 'medium') {
+      distance = 4
+      timer = 10
+      indexes = [7, 8, 9, 10, 11]
+      cards = [
+        3, 2, 4, 5, 3, 2, 4, 5, 4, 5, 3, 2, 4, 5, 3, 2, 4, 5, 4, 5, 18, 19, 20,
+        21, 12, 13, 14, 15, 16, 17,
+      ]
+    }
+
+    if (current === 'hard') {
+      distance = 4
+      count = 1
+      timer = 8
+      indexes = [7, 8, 9]
+      cards = [3, 2, 4, 5, 3, 2, 4, 5, 18, 19, 20, 21, 12, 13, 14, 15, 16, 17]
+    }
+
+    villages = new Array(count)
+      .fill('')
+      .map(() => this.getNewVillage(indexes, range, distance))
+
+    return {
+      cards,
+      timer,
+      villages,
+    }
+  }
+
+  getNewVillage = (indexes = [11], range, distance = 2) => {
+    let village, distances, isValid
+    const _getNewVillage = () => {
+      const index = Phaser.Math.RND.pick(indexes)
+      const angle = Phaser.Math.RND.pick([0, 90, 180, 270])
+      const x = Phaser.Math.RND.pick([-1, 0, 1]) * range
+      const y = Phaser.Math.RND.pick([-1, 0, 1]) * range
+      return [x, y, index, angle]
+    }
+    do {
+      village = _getNewVillage()
+      let [x, y] = village
+      distances = this.tiles
+        .filter((t) => VILLAGES.includes(t.index))
+        .map((v) => this.getDistance({ x, y }, { x: v._x, y: v._y }))
+
+      isValid = true
+      if (distances.some((d) => d < distance)) isValid = false
+      if (Object.values(this.board).some((t) => t._x === x && t._y === y))
+        isValid = false
+    } while (!isValid)
+    return village
   }
 
   get tiles() {
@@ -234,6 +335,8 @@ export default class extends Phaser.Scene {
 
     if (growth) {
       const { slot, newTile } = growth
+      this.forestSound.play()
+
       slot.destroy()
       const tile = new Tile(
         this,
@@ -388,21 +491,25 @@ const END_TILES = []
 const VILLAGES = [7, 8, 9, 10, 11]
 
 const LEVELS = [
+  // Intro to straight pieces and connecting villages
   {
     cards: [2],
     villages: [[2, 0, 8, 90]],
     timer: -1,
   },
+  // Intro to curved pieces and blocking yourself
   {
     cards: [3],
     villages: [[-1, 2, 8, 0]],
     timer: -1,
   },
+  // straight/curved
   {
     cards: [2, 3],
     villages: [[3, 3, 10, 0]],
     timer: -1,
   },
+  // You can connect villages in different groups
   {
     cards: [2],
     timer: -1,
@@ -411,13 +518,27 @@ const LEVELS = [
       [3, -3, 11, 0],
     ],
   },
-  {
-    cards: [3, 2, 4, 5, 18, 19, 20, 21],
-    timer: 30,
-    villages: [
-      [0, -6, 11, 90],
-      [3, -6, 11, 90],
-    ],
-  },
-  // TODO: random level progression after tutorial
+
+  // TODO: make level to teach Forests
+  'easy',
+  'easy',
+  'easy',
+  'easy',
+  'easy',
+  'easy',
+  'easy',
+  'easy',
+  'easy',
+  'easy',
+  'medium',
+  'medium',
+  'medium',
+  'medium',
+  'medium',
+  'medium',
+  'medium',
+  'medium',
+  'medium',
+  'medium',
+  'hard',
 ]
