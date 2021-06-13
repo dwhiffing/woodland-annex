@@ -64,15 +64,15 @@ export default class extends Phaser.Scene {
     this.addVillage()
     this.drawCards()
 
-    this.input.keyboard.on('keydown-Z', () => {
-      this.drawCards()
-    })
+    // this.input.keyboard.on('keydown-Z', () => {
+    //   this.drawCards()
+    // })
 
-    this.input.keyboard.on('keydown-X', () => {
-      this.levelIndex++
-      this.level = this.getNewLevel()
-      this.addVillage()
-    })
+    // this.input.keyboard.on('keydown-X', () => {
+    //   this.levelIndex++
+    //   this.level = this.getNewLevel()
+    //   this.addVillage()
+    // })
 
     this.input.keyboard.on('keydown-SPACE', () => {
       if (!this.draggingTile) return
