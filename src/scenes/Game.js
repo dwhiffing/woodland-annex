@@ -1,5 +1,5 @@
-import { DIRECTIONS, doesTileFit, isConnected } from '../constants'
-import { Tile } from '../objects/Tile'
+import { ATTRIBUTES, DIRECTIONS, doesTileFit, isConnected } from '../constants'
+import { rotate, Tile } from '../objects/Tile'
 import pick from 'lodash/pick'
 import { uniqBy } from 'lodash'
 
@@ -21,6 +21,9 @@ export default class extends Phaser.Scene {
   }
 
   create() {
+    const background = this.add.image(0, 0, 'background2').setScale(2)
+    background.setDepth(-3).setOrigin(0).setScrollFactor(0)
+
     this.cameras.main.setZoom(1)
     this.cameras.main.centerOn(250, 200)
 
@@ -77,17 +80,12 @@ export default class extends Phaser.Scene {
     if (this.villageTimer > 0) this.timerText.setAlpha(1)
   }
 
-  drawCards = () => {
+  drawCards = (n = 3) => {
     this.cards && this.cards.forEach((c) => c.destroy())
     this.cards = []
-    for (let i = 0; i < 1; i++) {
+    for (let i = 0; i < n; i++) {
       const frame = Phaser.Math.RND.pick(LEVELS[this.levelIndex].cards)
-
-      // const frame = Phaser.Math.RND.pick([2])
-      // const frame = Phaser.Math.RND.pick([3, 2])
-      // const frame = Phaser.Math.RND.pick([3, 2, 4, 5, 18, 19, 20, 21])
-      // const frame = Phaser.Math.RND.pick([3, 2, 4, 5, 18, 19, 20, 21])
-      this.cards.push(new Tile(this, i + 4, 7, frame))
+      this.cards.push(new Tile(this, i + 3, 7, frame))
     }
   }
 
@@ -143,7 +141,7 @@ export default class extends Phaser.Scene {
 
     this.resetSlots()
     this.updateRoads(tile)
-    // this.growForests()
+    this.growForests(tile)
     const nextLevel = this.tiles
       .filter((t) => VILLAGES.includes(t.index))
       .every(
@@ -177,27 +175,64 @@ export default class extends Phaser.Scene {
     return Object.values(this.board).filter((t) => t.type !== 'Sprite')
   }
 
-  growForests = () => {
-    // should add city tiles, but make them tree tiles instead
-    // every n turns, forest tiles will grow outward with a random forest tile connecting
-    const tileToGrow = Phaser.Math.RND.pick(
-      this.tiles.filter((t) => t.attributes.some((a) => a === 2)),
-    )
-    if (tileToGrow) {
-      const sideToGrow = tileToGrow.attributes.findIndex((a) => a === 2)
-      const [x, y] = DIRECTIONS[sideToGrow]
+  growForests = (tile) => {
+    const possibleTiles = this.tiles
+      .filter((t) => t.attributes.includes(2))
+      .map((t) => {
+        const neighbours = this.getAdjacentTiles(t, [...this.tiles, tile])
+        const spots = t.attributes
+          .map((a, i) => ({ a, i }))
+          .filter(({ a, i }) => a === 2 && !neighbours[i])
 
-      const newX = tileToGrow._x + x
-      const newY = tileToGrow._y + y
-      const thing = Object.values(this.board).find(
-        (s) => s._x === newX && s._y === newY,
+        const spot = Phaser.Math.RND.pick(spots)
+        if (!spot) return false
+        const [x, y] = DIRECTIONS[spot.i]
+        const newX = t._x + x
+        const newY = t._y + y
+        const thing = Object.values(this.board).find(
+          (s) => s._x === newX && s._y === newY,
+        )
+        if (typeof thing !== 'Sprite') {
+          let fit,
+            index,
+            attempts = 0,
+            angle,
+            attributes
+          // TODO: avoid looping somehow?
+          do {
+            index = Phaser.Math.RND.weightedPick([
+              12, 18, 19, 21, 20, 13, 15, 16, 17,
+            ])
+            angle = Phaser.Math.RND.pick([0, 90, 180, 270])
+            attributes = rotate(ATTRIBUTES[index], -(angle / 90))
+            fit = doesTileFit(thing, { attributes })
+            attempts++
+          } while (!fit && attempts < 100)
+          if (!fit) return false
+
+          return {
+            tile: t,
+            slot: thing,
+            newTile: { x: newX, y: newY, index, angle },
+          }
+        }
+        return false
+      })
+      .filter((t) => !!t && t.newTile)
+    const growth = Phaser.Math.RND.pick(possibleTiles)
+
+    if (growth) {
+      const { slot, newTile } = growth
+      slot.destroy()
+      const tile = new Tile(
+        this,
+        newTile.x,
+        newTile.y,
+        newTile.index,
+        newTile.angle,
       )
-      if (typeof thing !== 'Sprite') {
-        thing.destroy()
-        const tile = new Tile(this, newX, newY, 17)
-        this.add.existing(tile)
-        tile.disable()
-      }
+      this.add.existing(tile)
+      tile.disable()
     }
   }
 
@@ -214,18 +249,14 @@ export default class extends Phaser.Scene {
       if (connectedTile.road && !END_TILES.includes(connectedTile.index)) {
         // add on to existing road
         const index = connectedTile.road.findIndex((t) => connectedTile === t)
-        console.log('ADD_TO_ROAD', index, connectedTile.road)
         tile.road = connectedTile.road
         if (index === 0) {
-          console.log('unshift')
           connectedTile.road.unshift(tile)
         } else {
-          console.log('push')
           connectedTile.road.push(tile)
         }
       } else if (connectedTile) {
         // create new road
-        console.log('NEW_ROAD')
         const newRoad = [tile, connectedTile]
         this.roads.push(newRoad)
         tile.road = newRoad
@@ -242,7 +273,6 @@ export default class extends Phaser.Scene {
             t.road.some((t) => connectedTiles[0].road.includes(t)),
         )
       ) {
-        console.log('LOOP')
         const connectedTile = connectedTiles[0]
         const index = connectedTile.road.findIndex((t) => connectedTile === t)
         tile.road = connectedTile.road
@@ -253,8 +283,6 @@ export default class extends Phaser.Scene {
         }
         tile.road.closed = true
       } else {
-        // handle merge
-        console.log('MERGE')
         const roads = connectedTiles.map((t) => (t.road ? t.road : [t]))
         this.roads = this.roads.filter((r) => !roads.includes(r))
         const [start, end] = roads
@@ -273,7 +301,7 @@ export default class extends Phaser.Scene {
 
     this.roads = uniqBy(this.roads, (r) => [r._x, r._y])
 
-    this.roads.forEach((r) => this.logTiles(r))
+    // this.roads.forEach((r) => this.logTiles(r))
 
     this.lineGraphics.clear()
     // TODO: Fix road drawing?
@@ -305,13 +333,7 @@ export default class extends Phaser.Scene {
         if (t) t._facing = index
         return t
       })
-      .filter((t, i) => {
-        if (!t || !t.open) return false
-        if (i === 0) return t.open[2]
-        if (i === 1) return t.open[3]
-        if (i === 2) return t.open[0]
-        if (i === 3) return t.open[1]
-      })
+      .filter((t) => !!t)
 
   getAdjacentTiles = (tile, tiles = this.tiles) =>
     DIRECTIONS.map(([x, y]) =>
@@ -350,8 +372,8 @@ const LINE_COLORS = [
 
 const OPPOSITE = [2, 3, 0, 1]
 
-// const END_TILES = []
-const END_TILES = [4, 5, 15]
+const END_TILES = []
+// const END_TILES = [4, 5, 15]
 const VILLAGES = [7, 8, 9, 10, 11]
 
 const LEVELS = [
@@ -379,11 +401,12 @@ const LEVELS = [
     ],
   },
   {
-    cards: [2, 3],
-    timer: 10,
+    cards: [3, 2, 4, 5, 18, 19, 20, 21],
+    timer: 30,
     villages: [
       [0, -6, 11, 90],
       [3, -6, 11, 90],
     ],
   },
+  // TODO: random level progression after tutorial
 ]

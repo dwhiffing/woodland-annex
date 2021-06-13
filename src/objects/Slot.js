@@ -22,6 +22,7 @@ export class Slot extends Phaser.GameObjects.Zone {
     this.unhover()
     scene.add.existing(this.sprite)
     this.sprite.setDepth(0)
+    this.sprite.setTintFill(0x618f26)
     // getDebugText(this.scene, x, y)
   }
 
@@ -35,10 +36,10 @@ export class Slot extends Phaser.GameObjects.Zone {
   }
 
   hover() {
-    this.sprite.setTintFill(0x162e1c)
+    this.sprite.setAlpha(0.3)
   }
 
   unhover() {
-    this.sprite.setTintFill(0x122417)
+    this.sprite.setAlpha(0)
   }
 }

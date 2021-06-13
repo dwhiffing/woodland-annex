@@ -1,4 +1,4 @@
-export const TILE_SIZE = 250
+export const TILE_SIZE = 256
 // top, right, bottom, left
 export const DIRECTIONS = [
   [0, -1],

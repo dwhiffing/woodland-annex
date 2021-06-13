@@ -21,7 +21,6 @@ export class Tile extends Phaser.Physics.Arcade.Sprite {
     this.scene.add.existing(this)
     this.setScrollFactor(0)
     this._attributes = ATTRIBUTES[index]
-    this.open = [1, 1, 1, 1]
     this.unhover()
     this.on('pointerover', this.hover)
     this.on('pointerout', this.unhover)
@@ -46,10 +45,6 @@ export class Tile extends Phaser.Physics.Arcade.Sprite {
     this._roads = [road]
   }
 
-  close(direction) {
-    this.open[direction] = 0
-  }
-
   disable() {
     this.disabled = true
     this.scene.input.setDraggable(this, false)
@@ -60,12 +55,14 @@ export class Tile extends Phaser.Physics.Arcade.Sprite {
   }
 
   unhover() {
-    this.setAlpha(0.65)
+    this.setScale(1)
+    this.setDepth(10)
   }
 
   hover() {
     if (this.disabled) return
-    this.setAlpha(1)
+    this.setScale(1.25)
+    this.setDepth(20)
   }
 
   addSlots() {
@@ -102,7 +99,7 @@ const copyAttributes = (source, target, direction) => {
   if (direction === 3) target.attributes[1] = source.attributes[3]
 }
 
-const rotate = function (arr, n) {
+export const rotate = function (arr, n) {
   n = n % arr.length
   return arr.slice(n, arr.length).concat(arr.slice(0, n))
 }

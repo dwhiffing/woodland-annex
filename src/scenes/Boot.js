@@ -28,6 +28,7 @@ export default class extends Phaser.Scene {
     this.load.audio('drop', 'assets/audio/cash2.mp3')
     this.load.audio('place', 'assets/audio/cash-breakdown.mp3')
     this.load.image('background', 'assets/images/background.png')
+    this.load.image('background2', 'assets/images/background2.png')
     this.load.image('title', 'assets/images/title.png')
     this.load.image('playButton', 'assets/images/playButton.png')
     this.load.spritesheet('icon', 'assets/images/icons.png', {
