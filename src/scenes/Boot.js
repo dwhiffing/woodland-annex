@@ -23,6 +23,17 @@ export default class extends Phaser.Scene {
       frameWidth: 256,
       frameHeight: 256,
     })
+    this.load.audio('music', 'assets/audio/music.mp3')
+    this.load.audio('pickup', 'assets/audio/cash1.mp3')
+    this.load.audio('drop', 'assets/audio/cash2.mp3')
+    this.load.audio('place', 'assets/audio/cash-breakdown.mp3')
+    this.load.image('background', 'assets/images/background.png')
+    this.load.image('title', 'assets/images/title.png')
+    this.load.image('playButton', 'assets/images/playButton.png')
+    this.load.spritesheet('icon', 'assets/images/icons.png', {
+      frameWidth: 100,
+      frameHeight: 100,
+    })
     this.load.script(
       'webfont',
       'https://ajax.googleapis.com/ajax/libs/webfont/1.6.26/webfont.js',
@@ -35,8 +46,8 @@ export default class extends Phaser.Scene {
         },
         active: () => {
           progress.destroy()
-          // this.scene.start('Menu')
-          this.scene.start('Game')
+          this.scene.start('Menu')
+          // this.scene.start('Game')
         },
       })
     })

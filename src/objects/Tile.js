@@ -2,7 +2,13 @@ import { ATTRIBUTES, DIRECTIONS, getDebugText, TILE_SIZE } from '../constants'
 import { Slot } from './Slot'
 
 export class Tile extends Phaser.Physics.Arcade.Sprite {
-  constructor(scene, x, y, index = 0) {
+  constructor(
+    scene,
+    x,
+    y,
+    index = 0,
+    angle = Phaser.Math.RND.pick([0, 90, 180, 270]),
+  ) {
     super(scene, x * TILE_SIZE, y * TILE_SIZE, 'tiles', index)
     this._x = x
     this._y = y
@@ -19,14 +25,25 @@ export class Tile extends Phaser.Physics.Arcade.Sprite {
     this.unhover()
     this.on('pointerover', this.hover)
     this.on('pointerout', this.unhover)
+    this._roads = []
+    this.angle = angle
 
-    getDebugText(this.scene, x, y)
+    this.debugText = getDebugText(this.scene, x, y)
+    this.debugText.setAlpha(0)
   }
 
   get attributes() {
     const tileAngle = (this.angle < 0 ? this.angle + 360 : this.angle) / 90
     const result = rotate(this._attributes, -tileAngle)
     return result
+  }
+
+  get road() {
+    return this._roads[0]
+  }
+
+  set road(road) {
+    this._roads = [road]
   }
 
   close(direction) {
@@ -37,12 +54,13 @@ export class Tile extends Phaser.Physics.Arcade.Sprite {
     this.disabled = true
     this.scene.input.setDraggable(this, false)
     this.setDepth(1)
+    // this.debugText.setAlpha(1)
     this.addSlots()
     this.unhover()
   }
 
   unhover() {
-    this.setAlpha(0.7)
+    this.setAlpha(0.65)
   }
 
   hover() {

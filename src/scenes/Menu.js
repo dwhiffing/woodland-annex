@@ -1,3 +1,4 @@
+let music
 export default class extends Phaser.Scene {
   constructor() {
     super({ key: 'Menu' })
@@ -6,11 +7,13 @@ export default class extends Phaser.Scene {
   init(opts) {
     this.width = this.cameras.main.width
     this.height = this.cameras.main.height
-    const background = this.add.image(0, 0, 'background')
-    background.setOrigin(0)
-    background.setDepth(-3)
-    // this.music = this.sound.add('menuMusic', { loop: true, volume: 0.35 })
-    // this.music.play()
+    const background = this.add.image(0, 0, 'background').setScale(2)
+    background.setDepth(-3).setOrigin(0)
+    this.add.image(this.width / 2, 500, 'title').setScale(3)
+    if (!music) {
+      music = this.sound.add('music', { loop: true, volume: 0.35 })
+      music.play()
+    }
 
     this.mute = this.add.image(this.width - 130, this.height - 180, 'icon')
     this.mute.setOrigin(0)
@@ -29,8 +32,6 @@ export default class extends Phaser.Scene {
       .setScale(1.3)
       .setInteractive()
       .on('pointerdown', () => {
-        // this.registerSound.play()
-        // this.music.stop()
         this.scene.start('Game')
       })
   }

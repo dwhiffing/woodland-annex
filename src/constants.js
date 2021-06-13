@@ -8,6 +8,12 @@ export const DIRECTIONS = [
 ]
 
 export const ATTRIBUTES = [
+  [1, 1, 1, 1],
+  [0, 0, 1, 0],
+  [1, 0, 1, 0],
+  [0, 1, 1, 0],
+  [1, 1, 1, 0],
+  [1, 1, 1, 1],
   [0, 0, 0, 0],
   [0, 0, 1, 0],
   [1, 0, 1, 0],
@@ -20,10 +26,10 @@ export const ATTRIBUTES = [
   [0, 2, 0, 2],
   [2, 2, 0, 2],
   [2, 2, 2, 2],
-  [2, 1, 0, 1],
-  [2, 0, 1, 1],
+  [1, 0, 1, 2],
+  [0, 1, 1, 2],
   [2, 1, 1, 2],
-  [2, 1, 1, 1],
+  [1, 1, 1, 2],
   [2, 2, 1, 2],
 ]
 
@@ -35,6 +41,7 @@ export const getDebugText = (scene, x, y) => {
     { fontSize: 40 },
   )
   text.setDepth(10)
+  return text
 }
 export const doesTileFit = (slot, tile) =>
   slot.attributes.some((t) => t == null) &&
