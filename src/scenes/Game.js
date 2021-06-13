@@ -218,22 +218,24 @@ export default class extends Phaser.Scene {
     if (!current) current = LEVELS[LEVELS.length - 1]
     if (typeof current !== 'string') return current
 
-    let cards = [3, 2, 3, 2, 3, 2, 3, 2, 4, 5, 4, 5, 18]
+    let cards = [3, 2, 3, 2, 3, 2, 3, 2, 4, 5, 4, 5, 18, 19, 20]
     let timer = 15
     let villages = []
     let distance = 3
     let count = 1
     let range = Math.max(2, this.levelIndex)
     let indexes = [9, 10, 11]
+    let forestIndexes = [13, 14, 15, 16, 18, 19, 21, 12]
 
     if (current === 'medium') {
       distance = 4
       timer = 10
       indexes = [7, 8, 9, 10, 11]
       cards = [
-        3, 2, 4, 5, 3, 2, 4, 5, 4, 5, 3, 2, 4, 5, 3, 2, 4, 5, 4, 5, 18, 19, 20,
-        21, 12, 13, 14, 15, 16, 17,
+        3, 2, 4, 5, 3, 2, 4, 5, 4, 5, 4, 5, 18, 19, 20, 21, 12, 13, 14, 15, 16,
+        17,
       ]
+      forestIndexes = [18, 19, 21, 12, 20, 13, 15, 16, 17]
     }
 
     if (current === 'hard') {
@@ -242,6 +244,7 @@ export default class extends Phaser.Scene {
       timer = 8
       indexes = [7, 8, 9]
       cards = [3, 2, 4, 5, 3, 2, 4, 5, 18, 19, 20, 21, 12, 13, 14, 15, 16, 17]
+      forestIndexes = [18, 19, 21, 20, 13, 15, 16, 17, 12]
     }
 
     villages = new Array(count)
@@ -252,6 +255,7 @@ export default class extends Phaser.Scene {
       cards,
       timer,
       villages,
+      forestIndexes,
     }
   }
 
@@ -312,9 +316,7 @@ export default class extends Phaser.Scene {
             attributes
           // TODO: avoid looping somehow?
           do {
-            index = Phaser.Math.RND.weightedPick([
-              12, 18, 19, 21, 20, 13, 15, 16, 17,
-            ])
+            index = Phaser.Math.RND.weightedPick(this.level.forestIndexes)
             angle = Phaser.Math.RND.pick([0, 90, 180, 270])
             attributes = rotate(ATTRIBUTES[index], -(angle / 90))
             fit = doesTileFit(thing, { attributes })
