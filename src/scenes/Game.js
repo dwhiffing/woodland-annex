@@ -18,6 +18,17 @@ export default class extends Phaser.Scene {
     this.pickupSound = this.sound.add('pickup', { volume: 0.3 })
     this.dropSound = this.sound.add('drop', { volume: 0.4 })
     this.placeSound = this.sound.add('place', { volume: 0.4 })
+
+    this.mute = this.add.image(this.width - 130, this.height - 180, 'icon')
+    this.mute.setOrigin(0)
+    this.mute.setFrame(window.isMuted ? 2 : 1)
+    this.mute.setInteractive().on('pointerdown', () => {
+      window.isMuted = !window.isMuted
+      this.sound.mute = window.isMuted
+      localStorage.setItem('mute', window.isMuted ? 1 : 0)
+      this.mute.setFrame(window.isMuted ? 2 : 1)
+    })
+    this.mute.setDepth(50).setScrollFactor(0)
   }
 
   create() {
